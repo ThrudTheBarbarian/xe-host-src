@@ -41,8 +41,8 @@ module BusMonitor
     // the clock edge 
     ///////////////////////////////////////////////////////////////////////////
 	localparam 	TICK_BITS				= 7;		// Bits in the counter
-	localparam 	TICK_ADDRESS_VALID		= 17;		// Address now valid
-	localparam 	TICK_WRITE_VALID		= 41;		// Write data valid
+	localparam 	TICK_ADDRESS_VALID		= 16;		// Address now valid
+	localparam 	TICK_WRITE_VALID		= 42;		// Write data valid
 	localparam 	TICK_READ_VALID			= 48;		// Read data valid
 	
     ///////////////////////////////////////////////////////////////////////////

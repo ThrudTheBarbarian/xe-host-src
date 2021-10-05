@@ -1,0 +1,100 @@
+[*]
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Mon Oct  4 23:38:20 2021
+[*]
+[dumpfile] "/tmp/wave.vcd"
+[dumpfile_mtime] "Mon Oct  4 23:37:20 2021"
+[dumpfile_size] 26972
+[savefile] "/home/simon/src/verilog/xe-host-src/hdl/xe_host.gtkw"
+[timestart] 2933
+[size] 3433 1354
+[pos] -1 -1
+*-6.394674 2946 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] xe_host_tb.
+[treeopen] xe_host_tb.dut.
+[treeopen] xe_host_tb.dut.genblk1[0].
+[sst_width] 214
+[signals_width] 236
+[sst_expanded] 1
+[sst_vpaned_height] 268
+@28
+xe_host_tb.clk
+xe_host_tb.a8_clk
+xe_host_tb.a8_rst_n
+xe_host_tb.dut.a8_rw_IN
+@200
+-
+@22
+xe_host_tb.a8_addr[15:0]
+xe_host_tb.a8_data[7:0]
+@28
+xe_host_tb.a8_rw_n
+@200
+-
+@22
+xe_host_tb.dut.apIndex[3:0]
+@200
+-
+@28
+xe_host_tb.dut.sdramRead
+@22
+xe_host_tb.dut.a8_a_IN[15:0]
+@200
+-
+@28
+xe_host_tb.dut.a8_clk_falling
+xe_host_tb.dut.a8_addr_strobe
+xe_host_tb.dut.a8_write_strobe
+@22
+xe_host_tb.dut.inRange[7:0]
+xe_host_tb.dut.sdramAddr[31:0]
+@28
+xe_host_tb.dut.sdramValid
+@200
+-
+-Aperture 0
+@22
+xe_host_tb.dut.genblk1[0].aperture.a8_addr[15:0]
+@28
+xe_host_tb.dut.genblk1[0].aperture.a8_rw_n
+@22
+xe_host_tb.dut.genblk1[0].aperture.a8_data[7:0]
+@28
+xe_host_tb.dut.genblk1[0].aperture.cfgMatch
+@22
+xe_host_tb.dut.genblk1[0].aperture.lo[7:0]
+xe_host_tb.dut.genblk1[0].aperture.hi[7:0]
+@28
+xe_host_tb.dut.genblk1[0].aperture.aValid
+@22
+xe_host_tb.dut.genblk1[0].aperture.sramAddr[31:0]
+@28
+xe_host_tb.dut.genblk1[0].aperture.inRange
+@200
+-
+-External signals
+@28
+xe_host_tb.dut.a8_extsel_n
+xe_host_tb.dut.a8_mpd_n
+@200
+-
+-XIO bus
+@28
+xe_host_tb.dut.xio.clk
+xe_host_tb.dut.xio.cmdValid
+@23
+xe_host_tb.dut.xio.xioState[3:0]
+@22
+xe_host_tb.dut.xio.cmd[3:0]
+xe_host_tb.dut.xio.data[31:0]
+xe_host_tb.dut.xio.wData[7:0]
+xe_host_tb.dut.xio.wEn[7:0]
+@28
+xe_host_tb.dut.xio.wRts
+xe_host_tb.dut.xio.wCts
+xe_host_tb.dut.xio.wClk
+xe_host_tb.dut.xio.rRts
+xe_host_tb.dut.xio.rCts
+xe_host_tb.dut.xio.rClk
+[pattern_trace] 1
+[pattern_trace] 0

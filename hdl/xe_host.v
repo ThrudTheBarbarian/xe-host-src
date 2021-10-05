@@ -98,6 +98,19 @@ module xe_host
     output  reg         a8_rst_dir,     // Directionality of A8 /RST
     output  reg         a8_rw_dir,      // Directionality of A8 R/W
  
+    // XIO interface
+   	input	    [7:0]   xio_data_IN,    // XIO data bus inputs
+    output      [7:0]   xio_data_OUT,   // XIO data bus output values when..
+    output      [7:0]   xio_data_OE,    // XIO data bus output-enables are high
+  
+    output              xio_host_clk,   // XIO host data strobe
+    output              xio_host_rts,   // XIO host is ready to send
+    input               xio_host_cts,   // XIO host is clear to send
+    
+    input               xio_box_clk,    // XIO box data strobe
+    input               xio_box_rts,    // XIO box is ready to send
+    output              xio_box_cts,    // XIO box is clear to send
+ 
 	input	            sysclk,         // system clock         
     input               pll0_locked     // PLL has locked and we're ready to go
  );
@@ -125,15 +138,14 @@ module xe_host
 		.a8_read_strobe(a8_read_strobe),
 		.a8_clk_falling(a8_clk_falling)
 		);
-
-		
+	
     ///////////////////////////////////////////////////////////////////////////
     // Instantiate ANUM memory apertures
     ///////////////////////////////////////////////////////////////////////////
 	wire [ANUM-1:0] inRange;			// Flags from each of the apertures
 	wire [7:0] apCfg [0:ANUM-1];		// Configuration data from aperture
 	wire apCfgValid[ANUM-1:0];			// If config is valid
-	wire [23:0] apBase [0:ANUM-1];		// SDRAM addresses
+	wire [31:0] apBase [0:ANUM-1];		// SDRAM addresses
 	
 	generate for (i=0; i<ANUM; i=i+1)
 		begin		
@@ -143,9 +155,9 @@ module xe_host
 				.a8_rst_n(a8_rst_n_IN),
 				.a8_rw_n(a8_rw_IN),
 				.a8_data(a8_d_IN),
+				.a8_addr(a8_a_IN),
 				.wValid(a8_write_strobe),
 				.aValid(a8_addr_strobe),
-				.addr(a8_a_IN),
 				.index(i[3:0]),
 				.inRange(inRange[i]),
 				.apCfg(apCfg[i]),
@@ -166,16 +178,39 @@ module xe_host
     	.index(apIndex)
     	);
     	
+
     ///////////////////////////////////////////////////////////////////////////
-    // Determine and save the aperture's effective address
+    // Handle /MPD and /EXTSEL
     ///////////////////////////////////////////////////////////////////////////
-	reg [31:0] 	sdramAddr;
-	reg 		sdramValid;
+	reg 		extAccessValid;
+	
+	always @(posedge sysclk)
+		if (a8_rst_n_IN == 1'b0)
+			extAccessValid	<= 1'b0;
+		
+        // If the high-bit is set, that's a flag for 'not in range'
+		else if (apIndex[3] == 1'b0) 
+			extAccessValid	<= 1'b1;
+ 
+        // and if the a8 clock is falling we need to reset
+        else if  (a8_clk_falling == 1'b1)
+			extAccessValid	<= 1'b0;
+		
+    wire sdramRead 	        = (a8_rw_IN == 1'b1) & extAccessValid;
+    assign a8_mpd_n		    = ~sdramRead;
+    assign a8_extsel_n	    = ~sdramRead;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Determine and save the aperture's S address
+    ///////////////////////////////////////////////////////////////////////////
+    reg     [31:0]  sdramBase;
+	reg 	    	sdramValid;
+
 	
 	always @(posedge sysclk)
 		if (a8_rst_n_IN == 1'b0)
 			begin
-				sdramAddr 	<= 32'b0;
+				sdramBase 	<= 32'b0;
 				sdramValid	<= 1'b0;
 			end
 			
@@ -188,40 +223,79 @@ module xe_host
 			begin
 				sdramValid 	<= 1'b1;
 				case (apIndex[2:0])
-					3'h0	: sdramAddr <= {apBase[0],a8_a_IN[7:0]};
-					3'h1	: sdramAddr <= {apBase[1],a8_a_IN[7:0]};
-					3'h2	: sdramAddr <= {apBase[2],a8_a_IN[7:0]};
-					3'h3	: sdramAddr <= {apBase[3],a8_a_IN[7:0]};
-					3'h4	: sdramAddr <= {apBase[4],a8_a_IN[7:0]};
-					3'h5	: sdramAddr <= {apBase[5],a8_a_IN[7:0]};
-					3'h6	: sdramAddr <= {apBase[6],a8_a_IN[7:0]};
-					3'h7	: sdramAddr <= {apBase[7],a8_a_IN[7:0]};
+					3'h0    : sdramBase  <= apBase[0];                        
+					3'h1    : sdramBase  <= apBase[1];                        
+					3'h2    : sdramBase  <= apBase[2];                        
+					3'h3    : sdramBase  <= apBase[3];                        
+					3'h4    : sdramBase  <= apBase[4];                        
+					3'h5    : sdramBase  <= apBase[5];                        
+					3'h6    : sdramBase  <= apBase[6];                        
+					3'h7    : sdramBase  <= apBase[7];                        
 				endcase
 			end
+    
+    wire [31:0] sdramAddr = sdramBase + {24'b0,a8_a_IN[7:0]};
 
-
+       
     ///////////////////////////////////////////////////////////////////////////
-    // Handle /MPD and /EXTSEL
+    // If we have a valid SDRAM request, then send it off to the bus to xmit
     ///////////////////////////////////////////////////////////////////////////
-	reg 		extAccessValid;
-	
-	always @(posedge sysclk)
-		if (a8_rst_n_IN == 1'b0)
-			extAccessValid	<= 1'b0;
-			
-		else if (apIndex[3] == 1'b1)
-			begin
-				if (a8_write_strobe)
-					extAccessValid	<= 1'b0;
-			end
-		else
-			extAccessValid  <= 1'b1;
-			
-    wire sdramRead 	        = (a8_rw_IN == 1'b1) & extAccessValid;
-    assign a8_mpd_n		    = ~sdramRead;
-    assign a8_extsel_n	    = ~sdramRead;
+    reg             sdramLast;
+    
+    always @ (posedge sysclk)
+        if (a8_rst_n == 1'b0)
+            begin
+                sdramLast       <= 1'b0;
+            end
+        else
+            sdramLast <= sdramValid;
+     
+    ///////////////////////////////////////////////////////////////////////////
+    // Instantiate the bus to talk to the Zynq FPGA
+    ///////////////////////////////////////////////////////////////////////////
+    reg     [31:0]  xData;
+    reg     [3:0]   xCmd;
+    reg             xCmdValid;
+    
+    xio_bus xio
+        (
+		.clk(sysclk),
+		.rst_n(a8_rst_n),
+        .rData(xio_data_IN),
+        .rRts(xio_box_rts),
+        .rClk(xio_box_clk),
+        .rCts(xio_box_cts),
+        .wData(xio_data_OUT),
+        .wEn(xio_data_OE),
+        .wRts(xio_host_rts),
+        .wClk(xio_host_clk),
+        .wCts(xio_host_cts),
+        .data(xData),
+        .cmd(xCmd),
+        .cmdValid(xCmdValid)
+        );
 
-    wire sdramWrite         = (a8_rw_IN == 1'b0) & extAccessValid;
-	
-    	
+     
+       
+    ///////////////////////////////////////////////////////////////////////////
+    // If we have a valid SDRAM request, then send it off to the bus to xmit
+    ///////////////////////////////////////////////////////////////////////////
+    always @ (posedge sysclk)
+        begin
+            if (a8_rst_n == 1'b0)
+                begin
+                    xCmdValid       <= 1'b0;
+                    xCmd            <= 4'h0;
+                    xData           <= 31'h0;
+                end
+            else if (xCmdValid == 1'b1)
+                xCmdValid <= 1'b0;
+            else if ((sdramValid == 1'b1) && (sdramLast == 1'b0))
+                begin
+                    xCmdValid       <= 1'b1;
+                    xData           <= sdramAddr;
+                    xCmd            <= `XIO_CMD_SDRAM_READ;
+                end
+        end
+        
 endmodule
